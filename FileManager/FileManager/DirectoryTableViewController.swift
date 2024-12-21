@@ -12,6 +12,7 @@ class DirectoryTableViewController: UITableViewController {
     @IBOutlet weak var menuButton: UIBarButtonItem!
     
     var currentDirectoryUrl: URL?
+    
     var contents = [Content]()
     
     override func viewDidLoad() {
@@ -20,13 +21,27 @@ class DirectoryTableViewController: UITableViewController {
         if currentDirectoryUrl == nil {
             currentDirectoryUrl = URL(fileURLWithPath: NSHomeDirectory())
         }
+        
+        refreshContents()
+        updateNavigationTitle()
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        refreshContents()
-    }
+    func updateNavigationTitle() {
+        guard let url = currentDirectoryUrl else {
+            navigationItem.title = "???"
+            return
+        }
         
+        do {
+            
+            let nameValues = try url.resourceValues(forKeys: [.localizedNameKey])
+            navigationItem.title = nameValues.localizedName
+            
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
+    
     func refreshContents() {
         contents.removeAll()
         
@@ -34,14 +49,17 @@ class DirectoryTableViewController: UITableViewController {
             tableView.reloadData()
         }
         
-        guard let url = currentDirectoryUrl else { fatalError("empty url")}
+        guard let url = currentDirectoryUrl else {
+            fatalError("empty url")
+        }
         
         do {
-            let properties: [URLResourceKey] = [.localizedNameKey, .isDirectoryKey, .fileSizeKey, .isExcludedFromBackupKey]
             
-            let currentContentUrls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: properties, options: FileManager.DirectoryEnumerationOptions.skipsHiddenFiles)
+            let properties: [URLResourceKey] = [.localizedNameKey, .fileSizeKey, .isDirectoryKey, .isExcludedFromBackupKey]
             
-            for url in currentContentUrls {
+            let currentContentsUrls = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: properties, options: FileManager.DirectoryEnumerationOptions.skipsHiddenFiles)
+            
+            for url in currentContentsUrls {
                 let content = Content(url: url)
                 contents.append(content)
             }
@@ -57,6 +75,7 @@ class DirectoryTableViewController: UITableViewController {
             print(error.localizedDescription)
         }
     }
+    
 
     // MARK: - Table view data source
 
@@ -68,7 +87,28 @@ class DirectoryTableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         
-
+        let target = contents[indexPath.item]
+        
+        cell.imageView?.image = target.image
+        
+        switch target.type {
+        case .directory:
+            cell.textLabel?.text = "[\(target.name)]"
+            cell.detailTextLabel?.text = nil
+            cell.accessoryType = .disclosureIndicator
+        case .file:
+            cell.textLabel?.text = "\(target.name)"
+            cell.detailTextLabel?.text = "\(target.size)"
+            cell.accessoryType = .none
+        }
+        
+        switch target.isExcludedFromBackup {
+        case true: cell.textLabel?.textColor = .label
+        case false: cell.textLabel?.textColor = .secondaryLabel
+        }
+        
+        cell.detailTextLabel?.textColor = cell.textLabel?.textColor
+        
         return cell
     }
 

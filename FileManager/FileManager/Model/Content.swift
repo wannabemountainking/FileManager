@@ -11,29 +11,34 @@ struct Content {
     let url: URL
     
     var name: String {
-        return ""
+        let values = try? url.resourceValues(forKeys: [.localizedNameKey])
+        return values?.localizedName ?? "???"
     }
     
     var size: Int {
-        return 0
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey])
+        return values?.fileSize ?? 0
     }
     
     var type: Type {
-        return .file
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
+        return (values?.isDirectory ?? false) ? .directory : .file
     }
     
-    var isExcludedFromBackUp: Bool {  // 백업 되지 않는지 여부
-        return false
+    var isExcludedFromBackup: Bool {
+        let values = try? url.resourceValues(forKeys: [.isExcludedFromBackupKey])
+        return values?.isExcludedFromBackup ?? false
     }
     
     var image: UIImage? {
         switch type {
-        case .directory: return UIImage(systemName: "folder")
+        case .directory:
+            return UIImage(systemName: "folder")
         case .file:
             let ext = url.pathExtension
             switch ext {
             case "txt": return UIImage(systemName: "doc.text")
-            case "jpg", "png": return UIImage(systemName: "doc.richtext")
+            case "png", "jpg": return UIImage(systemName: "doc.richtext")
             default: return UIImage(systemName: "doc")
             }
         }
