@@ -7,6 +7,14 @@
 
 import UIKit
 
+fileprivate var byteFormatter: ByteCountFormatter = {
+    let formatter = ByteCountFormatter()
+    formatter.includesUnit = true
+    formatter.isAdaptive = true
+    return formatter
+}()
+
+
 struct Content {
     let url: URL
     
@@ -14,10 +22,13 @@ struct Content {
         let values = try? url.resourceValues(forKeys: [.localizedNameKey])
         return values?.localizedName ?? "???"
     }
-    
     var size: Int {
         let values = try? url.resourceValues(forKeys: [.fileSizeKey])
         return values?.fileSize ?? 0
+    }
+    
+    var sizeString: String? {
+        return byteFormatter.string(for: size)
     }
     
     var type: Type {
